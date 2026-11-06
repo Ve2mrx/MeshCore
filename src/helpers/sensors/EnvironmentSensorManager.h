@@ -32,6 +32,15 @@ protected:
   void rakGPSInit();
   bool gpsIsAwake(uint8_t ioPin);
   #endif
+  #ifdef GPS_AUTO_SYNC
+  uint32_t gps_auto_interval_ms = 0;  // 0: auto sync is off
+  uint32_t gps_auto_wait_ms = 0;      // time from gps_auto_last until the next sync
+  unsigned long gps_auto_last = 0;    // when the current or last sync started or ended
+  bool gps_auto_syncing = false;
+  bool gps_auto_first_sync = false;
+  bool gps_auto_advert_due = false;
+  void updateGpsAutoSync();
+  #endif
   #endif
 
 public:
@@ -39,6 +48,11 @@ public:
   EnvironmentSensorManager(LocationProvider &location): _location(&location){};
   LocationProvider* getLocationProvider() { return _location; }
   bool isGPSDetected() const override { return gps_detected; }
+  #ifdef GPS_AUTO_SYNC
+  void setGpsAutoSync(uint32_t interval_mins) override;
+  long gpsAutoNextMins() const override;
+  bool takeGpsAutoAdvert() override;
+  #endif
   #else
   EnvironmentSensorManager(){};
   #endif

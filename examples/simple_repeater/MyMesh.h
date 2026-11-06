@@ -159,7 +159,14 @@ protected:
 
 #if ENV_INCLUDE_GPS == 1
   void applyGpsPrefs() {
-    sensors.setSettingValue("gps", _prefs.gps_enabled?"1":"0");
+    bool found = sensors.setSettingValue("gps", _prefs.gps_enabled?"1":"0");
+#ifdef GPS_AUTO_SYNC
+    if (found && _prefs.gps_auto_enabled && !_prefs.gps_enabled) {
+      sensors.setGpsAutoSync(constrain(_prefs.gps_auto_mins, GPS_AUTO_MIN_MINS, GPS_AUTO_MAX_MINS));
+    }
+#else
+    (void)found;
+#endif
   }
 #endif
 

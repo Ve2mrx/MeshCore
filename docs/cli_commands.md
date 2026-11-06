@@ -1015,6 +1015,20 @@ region save
 
 ---
 
+#### Sync the clock automatically, with the GPS off in between (builds with `GPS_AUTO_SYNC` only)
+**Usage:**
+- `gps auto`
+- `gps auto set <minutes>`
+
+**Parameters:**
+- `minutes`: time between syncs, `10`-`43200`
+
+**Default:** `4320` (3 days)
+
+**Note:** `gps auto` selects this mode, or shows its status if already selected. `gps on` or `gps off` leaves it. `gps auto set` only changes the interval. The GPS is powered on boot and at each interval until it sets the clock, then powered off. A sync gives up after 5 minutes and is retried after 6 hours, or after the interval if that is shorter. The first sync to set the clock also sends a zero-hop advert.
+
+---
+
 #### Sync this node's clock with GPS time
 **Usage:** 
 - `gps sync`

@@ -9,6 +9,12 @@
 
 #define TELEM_CHANNEL_SELF   1   // LPP data channel for 'self' device
 
+#ifdef GPS_AUTO_SYNC
+#define GPS_AUTO_DEFAULT_MINS  4320UL    // 3 days
+#define GPS_AUTO_MIN_MINS      10UL
+#define GPS_AUTO_MAX_MINS      43200UL   // 30 days
+#endif
+
 class SensorManager {
 public:
   double node_lat, node_lon;  // modify these, if you want to affect Advert location
@@ -24,6 +30,11 @@ public:
   virtual bool setSettingValue(const char* name, const char* value) { return false; }
   virtual LocationProvider* getLocationProvider() { return NULL; }
   virtual bool isGPSDetected() const { return false; }
+#ifdef GPS_AUTO_SYNC
+  virtual void setGpsAutoSync(uint32_t interval_mins) { }
+  virtual long gpsAutoNextMins() const { return -1; }  // -1: not active, 0: syncing now or due
+  virtual bool takeGpsAutoAdvert() { return false; }   // true once, after the first sync sets the clock
+#endif
 
   // Helper functions to manage setting by keys (useful in many places ...)
   const char* getSettingByKey(const char* key) {

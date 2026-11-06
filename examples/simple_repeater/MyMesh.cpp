@@ -1307,6 +1307,12 @@ void MyMesh::loop() {
     updateAdvertTimer(); // schedule next local advert
   }
 
+#ifdef GPS_AUTO_SYNC
+  if (sensors.takeGpsAutoAdvert()) {
+    sendSelfAdvertisement(2000, false);  // the boot advert went out before the clock was set
+  }
+#endif
+
   if (set_radio_at && millisHasNowPassed(set_radio_at)) { // apply pending (temporary) radio params
     set_radio_at = 0;                                     // clear timer
     radio_driver.setParams(pending_freq, pending_bw, pending_sf, pending_cr);

@@ -730,6 +730,10 @@ const char* EnvironmentSensorManager::getSettingValue(int i) const {
 bool EnvironmentSensorManager::setSettingValue(const char* name, const char* value) {
   #if ENV_INCLUDE_GPS
   if (gps_detected && strcmp(name, "gps") == 0) {
+    #ifdef GPS_AUTO_SYNC
+    gps_auto_interval_ms = 0;  // an explicit on or off replaces auto sync
+    gps_auto_syncing = false;
+    #endif
     if (strcmp(value, "0") == 0) {
       stop_gps();
     } else {
@@ -943,12 +947,74 @@ void EnvironmentSensorManager::stop_gps() {
   MESH_DEBUG_PRINTLN("Stop GPS is N/A on this board. Actual GPS state unchanged");
   #endif
 }
+
+#ifdef GPS_AUTO_SYNC
+#ifndef GPS_RAIL_POWER_CONTROL
+  #error "GPS_AUTO_SYNC needs GPS_RAIL_POWER_CONTROL, or the GPS never powers off between syncs"
+#endif
+
+#define GPS_AUTO_TIMEOUT_MS  (5UL * 60UL * 1000UL)        // give up on a sync after this long
+#define GPS_AUTO_RETRY_MS    (6UL * 60UL * 60UL * 1000UL) // wait after a failed sync
+
+void EnvironmentSensorManager::setGpsAutoSync(uint32_t interval_mins) {
+  bool was_on = gps_auto_interval_ms != 0;
+  gps_auto_interval_ms = interval_mins * 60000UL;
+  if (was_on) {
+    gps_auto_wait_ms = gps_auto_interval_ms;  // new interval, keep the current schedule
+  } else {
+    gps_auto_wait_ms = 0;                     // sync now
+    gps_auto_last = millis();
+    gps_auto_first_sync = true;
+  }
+}
+
+long EnvironmentSensorManager::gpsAutoNextMins() const {
+  if (gps_auto_interval_ms == 0) return -1;
+  if (gps_auto_syncing) return 0;
+  unsigned long elapsed = millis() - gps_auto_last;
+  if (elapsed >= gps_auto_wait_ms) return 0;
+  return (gps_auto_wait_ms - elapsed + 59999UL) / 60000UL;  // round up
+}
+
+bool EnvironmentSensorManager::takeGpsAutoAdvert() {
+  bool due = gps_auto_advert_due;
+  gps_auto_advert_due = false;
+  return due;
+}
+
+void EnvironmentSensorManager::updateGpsAutoSync() {
+  if (gps_auto_interval_ms == 0) return;
+
+  unsigned long now = millis();
+  if (gps_auto_syncing) {
+    bool synced = !_location->waitingTimeSync();
+    if (synced || now - gps_auto_last >= GPS_AUTO_TIMEOUT_MS) {
+      stop_gps();
+      gps_auto_syncing = false;
+      gps_auto_last = now;
+      gps_auto_wait_ms = (synced || gps_auto_interval_ms < GPS_AUTO_RETRY_MS) ? gps_auto_interval_ms : GPS_AUTO_RETRY_MS;
+      if (synced && gps_auto_first_sync) {
+        gps_auto_first_sync = false;
+        gps_auto_advert_due = true;
+      }
+    }
+  } else if (now - gps_auto_last >= gps_auto_wait_ms) {
+    start_gps();
+    _location->syncTime();
+    gps_auto_syncing = true;
+    gps_auto_last = now;
+  }
+}
+#endif // GPS_AUTO_SYNC
 #endif // ENV_INCLUDE_GPS
 
 #if ENV_INCLUDE_GPS || defined(ENV_INCLUDE_BME680_BSEC)
 void EnvironmentSensorManager::loop() {
 
   #if ENV_INCLUDE_GPS
+  #ifdef GPS_AUTO_SYNC
+  updateGpsAutoSync();
+  #endif
   static unsigned long next_gps_update = 0;
   if (gps_active) {
     _location->loop();

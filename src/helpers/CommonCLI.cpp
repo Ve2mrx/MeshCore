@@ -344,9 +344,41 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
     } else if (memcmp(command, "region", 6) == 0) {
       handleRegionCmd(command, reply);
 #if ENV_INCLUDE_GPS == 1
+#ifdef GPS_AUTO_SYNC
+    } else if (memcmp(command, "gps auto set ", 13) == 0) {
+      uint32_t mins = _atoi(&command[13]);
+      if (mins < GPS_AUTO_MIN_MINS || mins > GPS_AUTO_MAX_MINS) {
+        sprintf(reply, "Error: range is %lu-%lu minutes", GPS_AUTO_MIN_MINS, GPS_AUTO_MAX_MINS);
+      } else {
+        _prefs->gps_auto_mins = mins;
+        if (_prefs->gps_auto_enabled) {
+          _sensors->setGpsAutoSync(mins);
+        }
+        savePrefs();
+        sprintf(reply, "ok, %lu min, auto is %s", (unsigned long)mins, _prefs->gps_auto_enabled ? "on" : "off");
+      }
+    } else if (strcmp(command, "gps auto") == 0) {
+      if (!_prefs->gps_auto_enabled && _sensors->setSettingValue("gps", "0")) {
+        _sensors->setGpsAutoSync(_prefs->gps_auto_mins);
+        _prefs->gps_enabled = 0;
+        _prefs->gps_auto_enabled = 1;
+        savePrefs();
+      }
+      long next = _sensors->gpsAutoNextMins();
+      if (next < 0) {
+        strcpy(reply, "gps toggle not found");
+      } else if (next == 0) {
+        sprintf(reply, "auto, every %lu min, syncing", (unsigned long)_prefs->gps_auto_mins);
+      } else {
+        sprintf(reply, "auto, every %lu min, next in %ld min", (unsigned long)_prefs->gps_auto_mins, next);
+      }
+#endif
     } else if (memcmp(command, "gps on", 6) == 0) {
       if (_sensors->setSettingValue("gps", "1")) {
         _prefs->gps_enabled = 1;
+#ifdef GPS_AUTO_SYNC
+        _prefs->gps_auto_enabled = 0;
+#endif
         savePrefs();
         strcpy(reply, "ok");
       } else {
@@ -355,6 +387,9 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
     } else if (memcmp(command, "gps off", 7) == 0) {
       if (_sensors->setSettingValue("gps", "0")) {
         _prefs->gps_enabled = 0;
+#ifdef GPS_AUTO_SYNC
+        _prefs->gps_auto_enabled = 0;
+#endif
         savePrefs();
         strcpy(reply, "ok");
       } else {
