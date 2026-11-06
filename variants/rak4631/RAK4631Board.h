@@ -17,6 +17,9 @@ protected:
 public:
   RAK4631Board() : NRF52Board("RAK4631_OTA") {}
   void begin();
+#ifdef GPS_RAIL_POWER_CONTROL
+  void shutdownPeripherals() override;
+#endif
 
   #define BATTERY_SAMPLES 8
 

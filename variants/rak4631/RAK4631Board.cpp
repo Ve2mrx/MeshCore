@@ -38,6 +38,18 @@ void RAK4631Board::initiateShutdown(uint8_t reason) {
 }
 #endif // NRF52_POWER_MANAGEMENT
 
+#ifdef GPS_RAIL_POWER_CONTROL
+// GPIO outputs hold their level in SYSTEMOFF, so the slot rail stays off.
+void RAK4631Board::shutdownPeripherals() {
+  NRF52Board::shutdownPeripherals();
+  if (Serial1) {
+    Serial1.end();  // hangs if already closed
+  }
+  digitalWrite(WB_IO2, LOW);  // preload OUT latch so pinMode can't glitch the rail high
+  pinMode(WB_IO2, OUTPUT);
+}
+#endif
+
 void RAK4631Board::begin() {
   NRF52BoardDCDC::begin();
   pinMode(PIN_VBAT_READ, INPUT);

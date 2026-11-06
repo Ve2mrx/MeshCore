@@ -868,7 +868,10 @@ bool EnvironmentSensorManager::gpsIsAwake(uint8_t ioPin){
     return true;
   } else if (Serial1.available()) {
     MESH_DEBUG_PRINTLN("Serial GPS init correctly and is turned on");
-#ifdef PIN_GPS_EN
+#if defined(GPS_RAIL_POWER_CONTROL)
+    // The GPS answered with this pin high, so this pin is what powers it.
+    gpsResetPin = ioPin;
+#elif defined(PIN_GPS_EN)
     if(PIN_GPS_EN){
       gpsResetPin = PIN_GPS_EN;
     }
@@ -894,6 +897,18 @@ void EnvironmentSensorManager::start_gps() {
     pinMode(gpsResetPin, OUTPUT);
     digitalWrite(gpsResetPin, HIGH);
     #endif
+    #ifdef GPS_RAIL_POWER_CONTROL
+    if (serialGPSFlag) {
+      #ifdef GPS_BAUD_RATE
+      Serial1.begin(GPS_BAUD_RATE);  // no-op if already open
+      #else
+      Serial1.begin(9600);           // no-op if already open
+      #endif
+      // Drop the fix from before the power cycle, or loop() would see it as
+      // valid and could set the clock back to the time it was taken.
+      _location->syncTime();
+    }
+    #endif
     return;
   #endif
 
@@ -908,6 +923,13 @@ void EnvironmentSensorManager::start_gps() {
 void EnvironmentSensorManager::stop_gps() {
   gps_active = false;
   #ifdef RAK_WISBLOCK_GPS
+    #ifdef GPS_RAIL_POWER_CONTROL
+    // An open UART keeps the MCU from idling. Uart::end() hangs if the UART is
+    // already closed, and this runs more than once during boot.
+    if (serialGPSFlag && Serial1) {
+      Serial1.end();
+    }
+    #endif
     #ifndef RAK_3401 // rak3401 shouldn't turn off WB_IO2 as it powers the PA
     pinMode(gpsResetPin, OUTPUT);
     digitalWrite(gpsResetPin, LOW);
