@@ -1309,7 +1309,7 @@ void MyMesh::loop() {
 
 #ifdef GPS_AUTO_SYNC
   if (sensors.takeGpsAutoAdvert()) {
-    sendSelfAdvertisement(2000, false);  // the boot advert went out before the clock was set
+    sendSelfAdvertisement(2000, false);  // the boot advert, held until the first sync ended
   }
 #endif
 

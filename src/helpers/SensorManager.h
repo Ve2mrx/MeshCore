@@ -33,7 +33,9 @@ public:
 #ifdef GPS_AUTO_SYNC
   virtual void setGpsAutoSync(uint32_t interval_mins) { }
   virtual long gpsAutoNextMins() const { return -1; }  // -1: not active, 0: syncing now or due
-  virtual bool takeGpsAutoAdvert() { return false; }   // true once, after the first sync sets the clock
+  virtual const char* gpsAutoLastResult() const { return "none"; }
+  virtual bool deferAdvertToGpsAutoSync() { return false; }  // true: hold the boot advert until the sync ends
+  virtual bool takeGpsAutoAdvert() { return false; }         // true once, when a held advert is due
 #endif
 
   // Helper functions to manage setting by keys (useful in many places ...)

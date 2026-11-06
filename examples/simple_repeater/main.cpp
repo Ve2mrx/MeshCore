@@ -116,6 +116,9 @@ void setup() {
 
   // send out initial zero hop Advertisement to the mesh
 #if ENABLE_ADVERT_ON_BOOT == 1
+  #ifdef GPS_AUTO_SYNC
+  if (!sensors.deferAdvertToGpsAutoSync())  // the clock is still wrong, send it once the sync ends
+  #endif
   the_mesh.sendSelfAdvertisement(16000, false);
 #endif
 

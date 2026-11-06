@@ -37,8 +37,9 @@ protected:
   uint32_t gps_auto_wait_ms = 0;      // time from gps_auto_last until the next sync
   unsigned long gps_auto_last = 0;    // when the current or last sync started or ended
   bool gps_auto_syncing = false;
-  bool gps_auto_first_sync = false;
+  bool gps_auto_advert_held = false;
   bool gps_auto_advert_due = false;
+  const char* gps_auto_last_result = "none";
   void updateGpsAutoSync();
   #endif
   #endif
@@ -51,6 +52,8 @@ public:
   #ifdef GPS_AUTO_SYNC
   void setGpsAutoSync(uint32_t interval_mins) override;
   long gpsAutoNextMins() const override;
+  const char* gpsAutoLastResult() const override { return gps_auto_last_result; }
+  bool deferAdvertToGpsAutoSync() override;
   bool takeGpsAutoAdvert() override;
   #endif
   #else

@@ -733,6 +733,10 @@ bool EnvironmentSensorManager::setSettingValue(const char* name, const char* val
     #ifdef GPS_AUTO_SYNC
     gps_auto_interval_ms = 0;  // an explicit on or off replaces auto sync
     gps_auto_syncing = false;
+    if (gps_auto_advert_held) {  // no sync to wait for now
+      gps_auto_advert_held = false;
+      gps_auto_advert_due = true;
+    }
     #endif
     if (strcmp(value, "0") == 0) {
       stop_gps();
@@ -964,8 +968,13 @@ void EnvironmentSensorManager::setGpsAutoSync(uint32_t interval_mins) {
   } else {
     gps_auto_wait_ms = 0;                     // sync now
     gps_auto_last = millis();
-    gps_auto_first_sync = true;
   }
+}
+
+bool EnvironmentSensorManager::deferAdvertToGpsAutoSync() {
+  if (gps_auto_interval_ms == 0) return false;
+  gps_auto_advert_held = true;
+  return true;
 }
 
 long EnvironmentSensorManager::gpsAutoNextMins() const {
@@ -993,8 +1002,9 @@ void EnvironmentSensorManager::updateGpsAutoSync() {
       gps_auto_syncing = false;
       gps_auto_last = now;
       gps_auto_wait_ms = (synced || gps_auto_interval_ms < GPS_AUTO_RETRY_MS) ? gps_auto_interval_ms : GPS_AUTO_RETRY_MS;
-      if (synced && gps_auto_first_sync) {
-        gps_auto_first_sync = false;
+      gps_auto_last_result = synced ? "ok" : "no fix";
+      if (gps_auto_advert_held) {  // send it even without a fix, the clock may stay wrong for hours
+        gps_auto_advert_held = false;
         gps_auto_advert_due = true;
       }
     }

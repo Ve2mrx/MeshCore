@@ -368,9 +368,9 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
       if (next < 0) {
         strcpy(reply, "gps toggle not found");
       } else if (next == 0) {
-        sprintf(reply, "auto, every %lu min, syncing", (unsigned long)_prefs->gps_auto_mins);
+        sprintf(reply, "auto, every %lu min, syncing, last %s", (unsigned long)_prefs->gps_auto_mins, _sensors->gpsAutoLastResult());
       } else {
-        sprintf(reply, "auto, every %lu min, next in %ld min", (unsigned long)_prefs->gps_auto_mins, next);
+        sprintf(reply, "auto, every %lu min, next in %ld min, last %s", (unsigned long)_prefs->gps_auto_mins, next, _sensors->gpsAutoLastResult());
       }
 #endif
     } else if (memcmp(command, "gps on", 6) == 0) {
