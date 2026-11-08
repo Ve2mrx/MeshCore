@@ -907,13 +907,9 @@ void EnvironmentSensorManager::start_gps() {
     #endif
     #ifdef GPS_RAIL_POWER_CONTROL
     if (serialGPSFlag) {
-      #ifdef GPS_BAUD_RATE
-      Serial1.begin(GPS_BAUD_RATE);  // no-op if already open
-      #else
-      Serial1.begin(9600);           // no-op if already open
-      #endif
-      // Drop the fix from before the power cycle, or loop() would see it as
-      // valid and could set the clock back to the time it was taken.
+      // Drop the data and fix from before the power cycle, or loop() would see
+      // the fix as valid and could set the clock back to the time it was taken.
+      while (Serial1.available()) Serial1.read();
       _location->syncTime();
     }
     #endif
@@ -931,13 +927,6 @@ void EnvironmentSensorManager::start_gps() {
 void EnvironmentSensorManager::stop_gps() {
   gps_active = false;
   #ifdef RAK_WISBLOCK_GPS
-    #ifdef GPS_RAIL_POWER_CONTROL
-    // An open UART keeps the MCU from idling. Uart::end() hangs if the UART is
-    // already closed, and this runs more than once during boot.
-    if (serialGPSFlag && Serial1) {
-      Serial1.end();
-    }
-    #endif
     #ifndef RAK_3401 // rak3401 shouldn't turn off WB_IO2 as it powers the PA
     pinMode(gpsResetPin, OUTPUT);
     digitalWrite(gpsResetPin, LOW);
@@ -957,7 +946,7 @@ void EnvironmentSensorManager::stop_gps() {
   #error "GPS_AUTO_SYNC needs GPS_RAIL_POWER_CONTROL, or the GPS never powers off between syncs"
 #endif
 
-#define GPS_AUTO_TIMEOUT_MS  (5UL * 60UL * 1000UL)        // give up on a sync after this long
+#define GPS_AUTO_TIMEOUT_MS  (15UL * 60UL * 1000UL)       // give up on a sync after this long; about 6 min was seen after a day off
 #define GPS_AUTO_RETRY_MS    (6UL * 60UL * 60UL * 1000UL) // wait after a failed sync
 
 void EnvironmentSensorManager::setGpsAutoSync(uint32_t interval_mins) {

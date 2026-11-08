@@ -1025,7 +1025,7 @@ region save
 
 **Default:** `4320` (3 days)
 
-**Note:** `gps auto` selects this mode, or shows its status if already selected. `gps on` or `gps off` leaves it. `gps auto set` only changes the interval. The GPS is powered on boot and at each interval until it sets the clock, then powered off. A sync gives up after 5 minutes and is retried after 6 hours, or after the interval if that is shorter. The status shows the last result: `none`, `ok` or `no fix`. In this mode the boot advert waits until the first sync ends, whether or not it set the clock, and syncs send no other adverts.
+**Note:** `gps auto` selects this mode, or shows its status if already selected. `gps on` or `gps off` leaves it. `gps auto set` only changes the interval. The GPS is powered on boot and at each interval until it sets the clock, then powered off. A sync gives up after 15 minutes and is retried after 6 hours, or after the interval if that is shorter. The status shows the last result: `none`, `ok` or `no fix`. In this mode the boot advert waits until the first sync ends, whether or not it set the clock, and syncs send no other adverts.
 
 ---
 
